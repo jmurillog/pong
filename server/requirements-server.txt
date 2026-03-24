@@ -1,0 +1,6 @@
+# Extra dependencies for the FastAPI streaming server.
+# Core project requirements (requirements.txt) must already be installed.
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pillow>=10.0.0
+websockets>=12.0

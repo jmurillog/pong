@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Logs and outputs
+outputs/
+logs/
+*.log
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/tsconfig.tsbuildinfo
+
+# OS/editor noise
+.DS_Store
+.idea/
+.vscode/
+.mplconfig/
+.cache/
+
+# Claude Code local settings
+.claude/
