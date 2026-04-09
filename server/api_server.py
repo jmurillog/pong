@@ -121,7 +121,8 @@ class _PongPhysics:
     """
 
     W, H = 160, 210
-    PADDLE_W, PADDLE_H = 5, 20
+    PADDLE_W = 5
+    PADDLE_H = 20
     BALL_R = 3
     PADDLE_SPEED = 3.0
     BALL_SPEED_INIT = 4.0
@@ -133,7 +134,21 @@ class _PongPhysics:
     _RIGHT_COL = np.array([92, 186, 92], dtype=np.uint8)   # green  – Atari agent
     _BALL_COL = np.array([236, 236, 236], dtype=np.uint8)
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        paddle_h: int | None = None,
+        paddle_speed: float | None = None,
+        ball_speed_init: float | None = None,
+        ball_speed_max: float | None = None,
+    ) -> None:
+        if paddle_h is not None:
+            self.PADDLE_H = paddle_h
+        if paddle_speed is not None:
+            self.PADDLE_SPEED = paddle_speed
+        if ball_speed_init is not None:
+            self.BALL_SPEED_INIT = ball_speed_init
+        if ball_speed_max is not None:
+            self.BALL_SPEED_MAX = ball_speed_max
         self._rng = np.random.default_rng()
         self.scores = [0, 0]
         self.ball = np.zeros(2, dtype=float)
@@ -542,7 +557,8 @@ async def human_vs_ai(
     await websocket.accept()
     try:
         ai = _AISession(model_path)
-        game = _PongPhysics()
+        # Human-friendly physics: bigger paddle, faster movement, slower ball
+        game = _PongPhysics(paddle_h=36, paddle_speed=5.0, ball_speed_init=2.5, ball_speed_max=5.0)
 
         # Human is LEFT (orange), AI is RIGHT (green)
         left_obs, right_obs = game.reset(seed=42)

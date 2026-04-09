@@ -274,11 +274,6 @@ function HumanVsAIGame({
         if (!ctx) return;
         img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         img.src = `data:image/jpeg;base64,${data.frame as string}`;
-
-        // Send current action
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ action: actionRef.current }));
-        }
       }
       if (data.type === 'stream_end') setStatus('done');
       if (data.type === 'error') {
@@ -288,16 +283,20 @@ function HumanVsAIGame({
     };
   }, [modelPath, fps, stop]);
 
-  // Keyboard controls
+  // Keyboard controls — send action immediately on key change to minimise input lag
   useEffect(() => {
+    const sendAction = (action: number) => {
+      actionRef.current = action;
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ action }));
+      }
+    };
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'w' || e.key === 'ArrowUp') { e.preventDefault(); actionRef.current = 2; }
-      if (e.key === 's' || e.key === 'ArrowDown') { e.preventDefault(); actionRef.current = 3; }
+      if (e.key === 'w' || e.key === 'ArrowUp') { e.preventDefault(); sendAction(2); }
+      if (e.key === 's' || e.key === 'ArrowDown') { e.preventDefault(); sendAction(3); }
     };
     const onKeyUp = (e: KeyboardEvent) => {
-      if (['w', 'ArrowUp', 's', 'ArrowDown'].includes(e.key)) {
-        actionRef.current = 0;
-      }
+      if (['w', 'ArrowUp', 's', 'ArrowDown'].includes(e.key)) sendAction(0);
     };
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);

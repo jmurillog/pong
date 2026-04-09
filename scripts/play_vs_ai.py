@@ -24,7 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--model", required=True, help="Path to trained SB3 PPO .zip model")
     parser.add_argument("--env-id", default="ALE/Pong-v5")
     parser.add_argument("--seed", type=int, default=123)
-    parser.add_argument("--fps", type=int, default=12)
+    parser.add_argument("--fps", type=int, default=60)
     parser.add_argument("--zoom", type=float, default=3.0)
     parser.add_argument("--max-steps", type=int, default=20_000)
     parser.add_argument(
