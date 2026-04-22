@@ -44,21 +44,45 @@ export default function PlayPage() {
         </Link>
       </div>
 
+      {/* AI mode explanations */}
+      <div>
+        <p className="text-sm font-medium text-zinc-400 mb-3">What are these AI modes?</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
+            <p className="text-sm font-medium text-white mb-2">vs Easy AI</p>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              A scripted bot that only tracks the ball 75% of the time and moves slowly. Good for beginners and for collecting human baseline data.
+            </p>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
+            <p className="text-sm font-medium text-white mb-2">vs Hard AI</p>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              A scripted bot with 95% accuracy and faster paddle speed. Much harder to beat — close to a perfect opponent.
+            </p>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
+            <p className="text-sm font-medium text-white mb-2">AI vs AI</p>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              Two scripted bots play each other. You just watch. Note: none of these bots are the trained PPO agent — to watch the PPO agent play, use the Watch AI page.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Info cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
-          <p className="text-sm font-medium text-white mb-2">Atari Environment</p>
+          <p className="text-sm font-medium text-white mb-2">About the trained PPO agent</p>
           <p className="text-xs text-zinc-400 leading-relaxed">
-            The actual PPO agent trains on the ALE (Arcade Learning Environment) version of Pong,
-            observing raw pixel frames (84×84 grayscale, 4-frame stack) and receiving +1 or −1
-            rewards per point scored.
+            The PPO agent was trained on the real Atari Pong ROM (ALE/Pong-v5), observing raw pixel frames (84×84 grayscale, 4-frame stack).
+            It is a neural network that learned by playing millions of games. Use the Watch AI page to see it play.
           </p>
         </div>
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-5">
           <p className="text-sm font-medium text-white mb-2">Scoring System</p>
           <p className="text-xs text-zinc-400 leading-relaxed">
-            Episode return = (player points) − (opponent points), range [−21, +21]. A return of
-            +21 means the player won every point. The human baseline averages this across all
+            Episode return = (your points) − (opponent points), range [−21, +21]. A return of
+            +21 means you won every point. The human baseline averages this across all
             episodes and players.
           </p>
         </div>

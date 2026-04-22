@@ -24,9 +24,11 @@ interface ChartPoint {
   mean_return_1M?: number;
   se_upper_1M?: number;
   se_lower_1M?: number;
+  band_width_1M?: number;
   mean_return_5M?: number;
   se_upper_5M?: number;
   se_lower_5M?: number;
+  band_width_5M?: number;
 }
 
 function buildChartData(summary: SummaryRow[]): ChartPoint[] {
@@ -43,14 +45,17 @@ function buildChartData(summary: SummaryRow[]): ChartPoint[] {
     if (!byTimestep[ts]) byTimestep[ts] = { timestep: ts };
     const pt = byTimestep[ts];
 
+    const seSafe = isNaN(se) ? 0 : se;
     if (budgetSteps <= 1_000_000) {
       pt.mean_return_1M = meanReturn;
-      pt.se_upper_1M = meanReturn + (isNaN(se) ? 0 : se);
-      pt.se_lower_1M = meanReturn - (isNaN(se) ? 0 : se);
+      pt.se_upper_1M = meanReturn + seSafe;
+      pt.se_lower_1M = meanReturn - seSafe;
+      pt.band_width_1M = 2 * seSafe;
     } else {
       pt.mean_return_5M = meanReturn;
-      pt.se_upper_5M = meanReturn + (isNaN(se) ? 0 : se);
-      pt.se_lower_5M = meanReturn - (isNaN(se) ? 0 : se);
+      pt.se_upper_5M = meanReturn + seSafe;
+      pt.se_lower_5M = meanReturn - seSafe;
+      pt.band_width_5M = 2 * seSafe;
     }
   }
 

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
@@ -32,14 +32,12 @@ export async function GET() {
     const filledPath = path.resolve(
       process.cwd(),
       '..',
-      '..',
       'data',
       'human_baseline',
       'human_returns.csv'
     );
     const templatePath = path.resolve(
       process.cwd(),
-      '..',
       '..',
       'data',
       'human_baseline',
@@ -110,5 +108,40 @@ export async function GET() {
   } catch (error) {
     console.error('Error reading human baseline:', error);
     return NextResponse.json({ source: 'none', players: [], overallStats: null, rawRows: [] });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const { player_id, scores }: { player_id: string; scores: number[] } = await req.json();
+
+    if (!player_id || !Array.isArray(scores) || scores.length === 0) {
+      return NextResponse.json({ error: 'player_id and scores are required' }, { status: 400 });
+    }
+
+    const filledPath = path.resolve(
+      process.cwd(),
+      '..',
+      'data',
+      'human_baseline',
+      'human_returns.csv'
+    );
+
+    const dir = path.dirname(filledPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+    const writeHeader = !fs.existsSync(filledPath) || fs.statSync(filledPath).size === 0;
+    const lines: string[] = [];
+    if (writeHeader) lines.push('player_id,episode,episode_return');
+
+    scores.forEach((score, i) => {
+      lines.push(`${player_id},${i + 1},${score}`);
+    });
+
+    fs.appendFileSync(filledPath, lines.join('\n') + '\n', 'utf-8');
+    return NextResponse.json({ ok: true, episodes_saved: scores.length });
+  } catch (error) {
+    console.error('Error saving human baseline:', error);
+    return NextResponse.json({ error: 'Failed to save scores' }, { status: 500 });
   }
 }

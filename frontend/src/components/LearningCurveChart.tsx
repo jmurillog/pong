@@ -18,9 +18,11 @@ interface DataPoint {
   mean_return_1M?: number;
   se_upper_1M?: number;
   se_lower_1M?: number;
+  band_width_1M?: number;
   mean_return_5M?: number;
   se_upper_5M?: number;
   se_lower_5M?: number;
+  band_width_5M?: number;
 }
 
 interface LearningCurveChartProps {
@@ -45,17 +47,28 @@ const CustomTooltip = ({
 }) => {
   if (!active || !payload || payload.length === 0) return null;
 
+  const relevant = payload.filter(
+    (e) => e.name === '1M Budget' || e.name === '5M Budget'
+  );
+  if (relevant.length === 0) return null;
+
   return (
-    <div style={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 6, padding: '8px 12px' }} className="text-xs">
+    <div
+      style={{
+        background: '#18181b',
+        border: '1px solid #3f3f46',
+        borderRadius: 6,
+        padding: '8px 12px',
+      }}
+      className="text-xs"
+    >
       <p className="text-zinc-400 mb-1.5 font-mono">Step: {formatSteps(label ?? 0)}</p>
-      {payload.map((entry) => {
-        if (entry.name.includes('Band')) return null;
-        return (
-          <p key={entry.name} style={{ color: entry.color }} className="font-mono">
-            {entry.name}: {typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
-          </p>
-        );
-      })}
+      {relevant.map((entry) => (
+        <p key={entry.name} style={{ color: entry.color }} className="font-mono">
+          {entry.name}:{' '}
+          {typeof entry.value === 'number' ? entry.value.toFixed(2) : entry.value}
+        </p>
+      ))}
     </div>
   );
 };
@@ -123,37 +136,31 @@ export default function LearningCurveChart({ data, humanBaseline }: LearningCurv
           />
         )}
 
+        {/* SE bands rendered first so lines appear on top */}
         {has1M && (
           <>
-            <Area
-              type="monotone"
-              dataKey="se_upper_1M"
-              fill="#3b82f6"
-              stroke="none"
-              fillOpacity={0.2}
-              name="1M SE Band"
-              legendType="none"
-              connectNulls
-            />
+            {/* Stack: transparent base from bottom of band, then colored width on top */}
             <Area
               type="monotone"
               dataKey="se_lower_1M"
-              fill="#09090b"
+              fill="transparent"
               stroke="none"
-              fillOpacity={1}
-              name="1M SE Band Lower"
+              fillOpacity={0}
               legendType="none"
               connectNulls
+              stackId="band1M"
+              name="1M lower (hidden)"
             />
-            <Line
+            <Area
               type="monotone"
-              dataKey="mean_return_1M"
-              stroke="#3b82f6"
-              strokeWidth={2}
-              dot={data.length < 10 ? { fill: '#3b82f6', r: 3 } : false}
-              activeDot={{ r: 4, fill: '#3b82f6' }}
-              name="1M Budget"
+              dataKey="band_width_1M"
+              fill="#3b82f6"
+              stroke="none"
+              fillOpacity={0.25}
+              legendType="none"
               connectNulls
+              stackId="band1M"
+              name="1M SE Band"
             />
           </>
         )}
@@ -162,35 +169,54 @@ export default function LearningCurveChart({ data, humanBaseline }: LearningCurv
           <>
             <Area
               type="monotone"
-              dataKey="se_upper_5M"
-              fill="#10b981"
+              dataKey="se_lower_5M"
+              fill="transparent"
               stroke="none"
-              fillOpacity={0.2}
-              name="5M SE Band"
+              fillOpacity={0}
               legendType="none"
               connectNulls
+              stackId="band5M"
+              name="5M lower (hidden)"
             />
             <Area
               type="monotone"
-              dataKey="se_lower_5M"
-              fill="#09090b"
+              dataKey="band_width_5M"
+              fill="#10b981"
               stroke="none"
-              fillOpacity={1}
-              name="5M SE Band Lower"
+              fillOpacity={0.25}
               legendType="none"
               connectNulls
-            />
-            <Line
-              type="monotone"
-              dataKey="mean_return_5M"
-              stroke="#10b981"
-              strokeWidth={2}
-              dot={data.length < 10 ? { fill: '#10b981', r: 3 } : false}
-              activeDot={{ r: 4, fill: '#10b981' }}
-              name="5M Budget"
-              connectNulls
+              stackId="band5M"
+              name="5M SE Band"
             />
           </>
+        )}
+
+        {/* Lines rendered last so they sit on top of SE bands */}
+        {has1M && (
+          <Line
+            type="monotone"
+            dataKey="mean_return_1M"
+            stroke="#3b82f6"
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4, fill: '#3b82f6' }}
+            name="1M Budget"
+            connectNulls
+          />
+        )}
+
+        {has5M && (
+          <Line
+            type="monotone"
+            dataKey="mean_return_5M"
+            stroke="#10b981"
+            strokeWidth={2}
+            dot={false}
+            activeDot={{ r: 4, fill: '#10b981' }}
+            name="5M Budget"
+            connectNulls
+          />
         )}
       </ComposedChart>
     </ResponsiveContainer>

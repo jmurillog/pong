@@ -69,7 +69,7 @@ export default function DashboardPage() {
         />
         <StatCard
           label="Eval Freq"
-          value="50k"
+          value="100k"
           subtitle="Steps per checkpoint"
         />
         <StatCard

@@ -91,13 +91,11 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Install Atari ROMs (license-accepted path from proposal):
+Install Atari ROMs:
 
 ```bash
-"$(python3 -m site --user-base)/bin/AutoROM" --accept-license
+AutoROM --accept-license
 ```
-
-This avoids PATH issues on macOS user installs.
 
 ## 4) Run Experiments
 
@@ -128,6 +126,21 @@ python scripts/run_experiments.py \
   --skip-if-complete
 ```
 
+On Apple Silicon (M1/M2/M3) add `--device mps` for faster training using the built-in GPU:
+
+```bash
+python scripts/run_experiments.py \
+  --env-id ALE/Pong-v5 \
+  --budgets 1000000,5000000 \
+  --seeds 11,22,33,44,55 \
+  --eval-freq 100000 \
+  --n-eval-episodes 20 \
+  --n-envs 8 \
+  --output-root outputs \
+  --skip-if-complete \
+  --device mps
+```
+
 Monitor learning live with TensorBoard while training:
 
 ```bash
@@ -145,7 +158,34 @@ python scripts/collect_human_baseline.py make-template \
   --episodes 15
 ```
 
-### Interactive entry
+### Interactive entry with live Pong window (recommended)
+
+A Pong window opens automatically for each episode. Score is recorded automatically — no typing needed.
+
+```bash
+python scripts/collect_human_baseline.py interactive \
+  --output data/human_baseline/human_returns.csv \
+  --players 6 \
+  --episodes 15 \
+  --play
+```
+
+Controls: `UP`/`W` = up, `DOWN`/`S` = down, `SPACE` = serve the ball, `ESC` = end episode early. The script pauses between players and waits for Enter, so you can swap who's at the keyboard.
+
+Use `--game-fps` to control how fast the ball and paddle move (default 15). Display stays smooth regardless. Lower = easier to play:
+
+```bash
+python scripts/collect_human_baseline.py interactive \
+  --output data/human_baseline/human_returns.csv \
+  --players 6 \
+  --episodes 15 \
+  --play \
+  --game-fps 10
+```
+
+### Interactive entry (manual score entry)
+
+If you cannot use the game window, enter scores manually after each episode:
 
 ```bash
 python scripts/collect_human_baseline.py interactive \
@@ -310,7 +350,7 @@ outputs/ppo_pong/<budget_label>/seed_<seed>/
 - Save raw episode-level evaluation data.
 - Save configuration and runtime metadata for each run.
 
-## 11) Quick Validation
+## 11) Quick Validation (optional)
 
 Run tests:
 
@@ -320,10 +360,61 @@ python3 -m pytest
 
 Current unit tests cover statistical utility correctness and seed-final score extraction logic.
 
-## 12) Suggested Execution Order
+## 12) Web Dashboard
 
-1. Install dependencies + ROMs.
-2. Run full experiment matrix.
-3. Collect/validate human baseline CSV.
-4. Run analysis script.
-5. Use generated `report.md` + `learning_curves.png` in the final report.
+A visual interface for everything — watch the AI play, play against it yourself, collect human baseline scores, and view results. This is the recommended way to interact with the project after training.
+
+### Quick start (from a fresh terminal inside the project)
+
+You need two terminals running at the same time.
+
+**Terminal 1 — Python backend** (must be inside the project with `.venv` active):
+
+```bash
+cd /path/to/pong
+source .venv/bin/activate
+pip install -r server/requirements-server.txt
+python -m uvicorn server.api_server:app --host 0.0.0.0 --port 8000
+```
+
+**Terminal 2 — Frontend**:
+
+```bash
+cd /path/to/pong/frontend
+npm install
+npm run dev
+```
+
+Then open **http://localhost:3000** in your browser.
+
+### Pages
+
+| Page | What it does |
+|---|---|
+| **Dashboard** | Project overview, research questions, and final results table (populated after running the analysis script) |
+| **Watch AI** | Stream live gameplay from any trained checkpoint — choose budget, seed, and step count |
+| **Play Pong** | Play against scripted Easy/Hard AI or watch AI vs AI in the browser |
+| **Human Baseline** | Collect human scores by playing in the browser (saves to CSV automatically), and view results once collected |
+| **Training** | Learning curves and per-seed variance across checkpoints |
+| **Evaluation** | Final performance table with bootstrap 95% CIs and agent vs human comparison (populated after analysis) |
+
+### Note on Dashboard / Evaluation data
+
+The Dashboard and Evaluation pages show results from the analysis script. Run this after collecting human baseline data:
+
+```bash
+python scripts/analyze_results.py \
+  --output-root outputs \
+  --experiment-name ppo_pong \
+  --human-csv data/human_baseline/human_returns.csv
+```
+
+The Training page (Seed Variance section) works immediately from training outputs without needing to run the analysis script first.
+
+## 13) Suggested Execution Order
+
+1. Install dependencies + ROMs (Section 3).
+2. Run full experiment matrix (Section 4).
+3. Collect human baseline — use the web dashboard Human Baseline page or the CLI script (Section 5).
+4. Run analysis script (Section 6).
+5. View results in the web dashboard or use `report.md` + `learning_curves.png` in the final report.

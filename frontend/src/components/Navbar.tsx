@@ -9,6 +9,7 @@ import {
   Users,
   Gamepad2,
   Play,
+  FileText,
 } from 'lucide-react';
 
 const navItems = [
@@ -18,6 +19,7 @@ const navItems = [
   { href: '/human-baseline', label: 'Human Baseline', icon: Users },
   { href: '/play', label: 'Play Pong', icon: Gamepad2 },
   { href: '/watch-ai', label: 'Stephano AI', icon: Play },
+  { href: '/report', label: 'Report', icon: FileText },
 ];
 
 export default function Navbar() {
@@ -53,7 +55,7 @@ export default function Navbar() {
 
       {/* Footer */}
       <div className="px-4 py-4 border-t border-zinc-800">
-        <span className="text-xs text-zinc-700">IE University · 2025</span>
+        <span className="text-xs text-zinc-700">IE University · 2026</span>
       </div>
     </nav>
   );

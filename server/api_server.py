@@ -17,6 +17,7 @@ import asyncio
 import base64
 import io
 import json
+import subprocess
 import sys
 from collections import deque
 from pathlib import Path
@@ -304,6 +305,35 @@ class _PongPhysics:
         new_speed = min(speed * 1.04, self.BALL_SPEED_MAX)
         if speed > 0:
             self.ball_v = self.ball_v / speed * new_speed
+
+
+# ── REST: run analysis ───────────────────────────────────────────────────────
+
+
+@app.post("/api/analyze")
+def run_analysis() -> dict[str, Any]:
+    """Run analyze_results.py and return success/error."""
+    human_csv = PROJECT_ROOT / "data" / "human_baseline" / "human_returns.csv"
+    cmd = [
+        sys.executable,
+        str(PROJECT_ROOT / "scripts" / "analyze_results.py"),
+        "--output-root", str(PROJECT_ROOT / "outputs"),
+        "--experiment-name", "ppo_pong",
+    ]
+    if human_csv.exists():
+        cmd += ["--human-csv", str(human_csv)]
+    else:
+        cmd += ["--skip-human"]
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        if result.returncode == 0:
+            return {"ok": True, "message": "Analysis complete.", "has_human": human_csv.exists()}
+        return {"ok": False, "message": result.stderr or result.stdout}
+    except subprocess.TimeoutExpired:
+        return {"ok": False, "message": "Analysis timed out after 120s."}
+    except Exception as exc:
+        return {"ok": False, "message": str(exc)}
 
 
 # ── REST: checkpoint discovery ────────────────────────────────────────────────

@@ -131,10 +131,18 @@ function draw(ctx: CanvasRenderingContext2D, gs: GameStateRef) {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function PongGame() {
+interface PongGameProps {
+  onEpisodeEnd?: (humanScore: number, aiScore: number) => void;
+  collectionMode?: boolean;
+  initialMode?: GameMode;
+}
+
+export default function PongGame({ onEpisodeEnd, collectionMode = false, initialMode = 'easy' }: PongGameProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const onEpisodeEndRef = useRef(onEpisodeEnd);
+  onEpisodeEndRef.current = onEpisodeEnd;
   const gsRef = useRef<GameStateRef>({
-    mode: 'easy',
+    mode: initialMode,
     state: 'IDLE',
     ballX: CANVAS_W / 2,
     ballY: CANVAS_H / 2,
@@ -150,7 +158,7 @@ export default function PongGame() {
     lastTime: 0,
   });
   const rafRef = useRef<number | null>(null);
-  const [mode, setMode] = useState<GameMode>('easy');
+  const [mode, setMode] = useState<GameMode>(initialMode);
   const [gameState, setGameState] = useState<GameState>('IDLE');
 
   const resetBall = useCallback((direction: 1 | -1 = 1) => {
@@ -266,6 +274,7 @@ export default function PongGame() {
         gs.state = 'GAME_OVER';
         gs.winner = isAiVsAi ? 'Right AI' : 'AI';
         setGameState('GAME_OVER');
+        onEpisodeEndRef.current?.(gs.scoreLeft, gs.scoreRight);
       } else {
         resetBall(1);
       }
@@ -275,6 +284,7 @@ export default function PongGame() {
         gs.state = 'GAME_OVER';
         gs.winner = isAiVsAi ? 'Left AI' : 'Player';
         setGameState('GAME_OVER');
+        onEpisodeEndRef.current?.(gs.scoreLeft, gs.scoreRight);
       } else {
         resetBall(-1);
       }
@@ -362,22 +372,24 @@ export default function PongGame() {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      {/* Mode selector */}
-      <div className="flex gap-2">
-        {modes.map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => handleModeChange(id)}
-            className={
-              mode === id
-                ? 'bg-white text-black text-sm px-3 py-1.5 rounded-md'
-                : 'bg-zinc-800 hover:bg-zinc-700 text-white text-sm px-3 py-1.5 rounded-md transition-colors'
-            }
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* Mode selector — hidden in collection mode */}
+      {!collectionMode && (
+        <div className="flex gap-2">
+          {modes.map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => handleModeChange(id)}
+              className={
+                mode === id
+                  ? 'bg-white text-black text-sm px-3 py-1.5 rounded-md'
+                  : 'bg-zinc-800 hover:bg-zinc-700 text-white text-sm px-3 py-1.5 rounded-md transition-colors'
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Canvas */}
       <canvas

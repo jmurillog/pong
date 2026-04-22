@@ -46,6 +46,19 @@ def build_parser() -> argparse.ArgumentParser:
         default="",
         help="Comma-separated names. If omitted: player_1..player_N",
     )
+    interactive.add_argument(
+        "--play",
+        action="store_true",
+        help="Launch a Pong window for each episode. Score is recorded automatically.",
+    )
+    interactive.add_argument("--env-id", default="ALE/Pong-v5")
+    interactive.add_argument("--fps", type=int, default=60,
+                              help="Display frame rate (visual smoothness).")
+    interactive.add_argument("--game-fps", type=int, default=15,
+                              help="Game logic speed — lower = slower ball and paddle.")
+    interactive.add_argument("--zoom", type=float, default=3.0)
+    interactive.add_argument("--seed-offset", type=int, default=0,
+                              help="Episode seeds start at seed-offset+episode_number.")
     return parser
 
 
@@ -85,25 +98,132 @@ def _parse_player_names(raw: str, players: int) -> list[str]:
     return names
 
 
-def cmd_interactive(output: Path, players: int, episodes: int, player_names_raw: str) -> int:
+def _play_one_episode(env_id: str, seed: int, fps: int, game_fps: int, zoom: float) -> float:
+    """Launch a pygame Pong window, let the human play, return the episode score.
+
+    fps controls display smoothness; game_fps controls how fast the ball and
+    paddle actually move. Each game step is shown for (fps // game_fps) display
+    frames so the image stays smooth while the game runs slower.
+    """
+    import numpy as np
+    import pygame
+
+    from pong_ppo.envs import build_single_env
+
+    # How many display frames to hold each game frame for.
+    hold_frames = max(1, round(fps / game_fps))
+
+    env = build_single_env(env_id, clip_rewards=False, render_mode="rgb_array", monitor=False)
+    pygame.init()
+    try:
+        obs, _ = env.reset(seed=seed)
+        frame = env.render()
+        if frame is None:
+            raise RuntimeError("Environment returned no frame.")
+
+        frame_h, frame_w = frame.shape[0], frame.shape[1]
+        window_w, window_h = int(frame_w * zoom), int(frame_h * zoom)
+        screen = pygame.display.set_mode((window_w, window_h))
+        pygame.display.set_caption("Pong — you are playing  |  ESC to quit episode")
+        clock = pygame.time.Clock()
+
+        total_reward = 0.0
+        done = False
+        truncated = False
+        current_surface = None
+
+        while not (done or truncated):
+            # Read keys and step the game once.
+            quit_requested = False
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    quit_requested = True
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    quit_requested = True
+
+            if quit_requested:
+                break
+
+            keys = pygame.key.get_pressed()
+            up = keys[pygame.K_UP] or keys[pygame.K_w]
+            down = keys[pygame.K_DOWN] or keys[pygame.K_s]
+            fire = keys[pygame.K_SPACE]
+            if up and fire:
+                action = 4
+            elif down and fire:
+                action = 5
+            elif up:
+                action = 2
+            elif down:
+                action = 3
+            elif fire:
+                action = 1
+            else:
+                action = 0
+
+            obs, reward, done, truncated, _ = env.step(action)
+            total_reward += float(reward)
+
+            frame = env.render()
+            if frame is not None:
+                current_surface = pygame.transform.scale(
+                    pygame.surfarray.make_surface(np.transpose(frame, (1, 0, 2))),
+                    (window_w, window_h),
+                )
+
+            # Display the same game frame for `hold_frames` display frames.
+            for _ in range(hold_frames):
+                if current_surface is not None:
+                    screen.blit(current_surface, (0, 0))
+                    pygame.display.flip()
+                clock.tick(fps)
+
+        return total_reward
+    finally:
+        env.close()
+        pygame.quit()
+
+
+def cmd_interactive(
+    output: Path,
+    players: int,
+    episodes: int,
+    player_names_raw: str,
+    play: bool,
+    env_id: str,
+    fps: int,
+    game_fps: int,
+    zoom: float,
+    seed_offset: int,
+) -> int:
     player_names = _parse_player_names(player_names_raw, players)
     rows: list[dict] = []
     print("Entering interactive human baseline collection.")
-    print(
-        "Protocol reminder: same keyboard settings + rendering for all players, "
-        f"{episodes} episodes each."
-    )
+    if play:
+        print("Controls: UP/W = up, DOWN/S = down, SPACE = fire, ESC = end episode early.")
+    else:
+        print(
+            "Protocol reminder: same keyboard settings + rendering for all players, "
+            f"{episodes} episodes each."
+        )
 
     for player in player_names:
         print(f"\nPlayer: {player}")
+        input("Press Enter when ready to start...")
         for episode in range(1, episodes + 1):
-            while True:
-                raw = input(f"Episode {episode} return: ").strip()
-                try:
-                    value = float(raw)
-                    break
-                except ValueError:
-                    print("Please enter a numeric return (e.g., -21, 3, 17).")
+            if play:
+                seed = seed_offset + episode
+                print(f"Episode {episode}/{episodes} — close the window or press ESC when done.")
+                value = _play_one_episode(env_id, seed=seed, fps=fps, game_fps=game_fps, zoom=zoom)
+                print(f"  Score: {value}")
+            else:
+                while True:
+                    raw = input(f"Episode {episode} return: ").strip()
+                    try:
+                        value = float(raw)
+                        break
+                    except ValueError:
+                        print("Please enter a numeric return (e.g., -21, 3, 17).")
             rows.append(
                 {
                     "player_id": player,
@@ -152,6 +272,12 @@ def main() -> None:
                 args.players,
                 args.episodes,
                 args.player_names,
+                play=args.play,
+                env_id=args.env_id,
+                fps=args.fps,
+                game_fps=args.game_fps,
+                zoom=args.zoom,
+                seed_offset=args.seed_offset,
             )
         )
 
@@ -160,4 +286,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
