@@ -177,6 +177,14 @@ export default function ReportPage() {
               PPO is a sensible first choice for game agent development under compute constraints: our
               sample-efficiency curve and seed-stability estimates directly inform that decision.
             </P>
+            <P>
+              Beyond this specific experiment, the approach itself — measuring a human baseline under controlled
+              conditions and reporting uncertainty at every level of the comparison — offers a replicable
+              evaluation methodology that addresses long-standing validity concerns in RL benchmarking{' '}
+              <Cite>(Agarwal et al., 2021)</Cite>. The field has protocols for comparing algorithms to each
+              other; it lacks a standard for comparing them to humans with appropriate uncertainty
+              quantification. This study contributes one such protocol.
+            </P>
           </Sub>
 
           <Sub title="Hypotheses">
@@ -190,31 +198,6 @@ export default function ReportPage() {
 
         {/* Results */}
         <Section id="results" number="2" title="Results">
-          <Sub title="Learning dynamics">
-            <P>
-              Figure 1 presents learning curves (mean ± 1 SE across five seeds) for both training budgets
-              alongside the human baseline. Both trajectories share a cold-start phase: mean return is −21.0
-              for the first 200,000–400,000 timesteps, indicating no policy improvement. Around step 500,000,
-              performance rises sharply. At 800,000 timesteps — approximately 80% into the shorter budget —
-              the mean first exceeds the human baseline mean of −15.73, directly answering{' '}
-              <span className="font-semibold text-white">RQ1</span>: PPO surpasses novice human performance at
-              roughly <span className="font-semibold text-blue-400">~800k training steps</span>, well within a
-              1M-step budget.
-            </P>
-            <P>
-              The 5M trajectory continues improving after the 1M run terminates: crossing zero return at ~1.4M
-              steps, reaching 100% win rate by 3.6M steps, and stabilizing at +15.61 at 5M steps. The
-              characteristic two-phase structure — rapid acquisition of game mechanics (500k–1.5M) followed by
-              gradual refinement — is consistent across all five seeds.
-            </P>
-          </Sub>
-
-          <Fig
-            src="/figures/learning_curves.png"
-            caption="Figure 1. PPO learning curves (mean ± 1 SE across 5 seeds) for 1M and 5M budgets."
-            note="Orange dashed line marks the novice human baseline mean (−15.73). Both budgets share early dynamics up to 1M steps; the 5M curve continues to near-perfect performance."
-          />
-
           <Sub title="Final performance and human comparison">
             <P>
               Table 1 summarizes final agent performance for both budgets alongside the measured human baseline,
@@ -264,8 +247,8 @@ export default function ReportPage() {
           </PaperTable>
 
           <div className="space-y-2">
-            <P><ResultBadge label="H1 confirmed.">The 95% bootstrap CI for agent−human at 1M is [+4.98, +9.27], entirely excluding zero. At 5M, the difference is +31.34 (CI: [+29.94, +32.57]). PPO significantly exceeds the novice human baseline at both budgets.</ResultBadge></P>
-            <P><ResultBadge label="H2 confirmed.">At 1M steps, per-seed returns span [−12.35, −6.20] with σ = 2.64 — a cherry-picked best run would appear ~50% better than the worst. At 5M steps, variance shrinks (σ = 1.47, range [+13.25, +17.00]), but differences remain non-trivial for compute-constrained decisions.</ResultBadge></P>
+            <P><ResultBadge label="H1 confirmed.">PPO exceeds the novice human baseline at both budget levels. The 95% bootstrap CI for the agent−human difference at 1M is [+4.98, +9.27], entirely excluding zero. At 5M, the difference grows to +31.34 (CI: [+29.94, +32.57]), with all five seeds achieving 100% win rate.</ResultBadge></P>
+            <P><ResultBadge label="H2 confirmed.">At 1M steps, per-seed returns span [−12.35, −6.20] with σ = 2.64 — a cherry-picked best run appears ~50% better than the worst, confirming single-seed reporting is meaningfully misleading. At 5M, variance shrinks (σ = 1.47, range [+13.25, +17.00]) but seed-level differences remain non-trivial for compute-constrained decisions.</ResultBadge></P>
           </div>
 
           <Sub title="Seed-level variance">
@@ -279,6 +262,32 @@ export default function ReportPage() {
             src="/figures/seed_variance.png"
             caption="Figure 2. Per-seed final returns for 1M (blue) and 5M (green) budgets."
             note="Orange dashed line marks the novice human mean. All five 5M seeds exceed the human distribution; 1M seeds exceed the human mean but show greater spread."
+          />
+
+          <Sub title="Learning dynamics">
+            <P>
+              Figure 1 shows learning curves (mean ± 1 SE across five seeds) for both budgets alongside the
+              human baseline, revealing how the agent arrives at the headline numbers above. Both trajectories
+              share a cold-start phase: mean return is −21.0 for the first 200,000–400,000 timesteps,
+              indicating no policy improvement. Around step 500,000, performance rises sharply. At 800,000
+              timesteps — approximately 80% into the shorter budget — the cross-seed mean first exceeds the
+              human baseline mean of −15.73, directly answering{' '}
+              <span className="font-semibold text-white">RQ1</span>: PPO surpasses novice human performance at
+              roughly <span className="font-semibold text-blue-400">~800k training steps</span>, well within a
+              1M-step budget.
+            </P>
+            <P>
+              The 5M trajectory continues improving after the 1M run terminates: crossing zero return at ~1.4M
+              steps, reaching 100% win rate by 3.6M steps, and stabilizing at +15.61 at 5M steps. This
+              two-phase structure — rapid acquisition of game mechanics (500k–1.5M) followed by gradual
+              refinement — is consistent across all five seeds.
+            </P>
+          </Sub>
+
+          <Fig
+            src="/figures/learning_curves.png"
+            caption="Figure 1. PPO learning curves (mean ± 1 SE across 5 seeds) for 1M and 5M budgets."
+            note="Orange dashed line marks the novice human baseline mean (−15.73). Both budgets share early dynamics up to 1M steps; the 5M curve continues to near-perfect performance."
           />
         </Section>
 

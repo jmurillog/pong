@@ -180,7 +180,7 @@ function AIVsAIViewer({
 
       {/* Controls */}
       <div className="flex gap-2">
-        {status === 'playing' ? (
+        {status === 'playing' || status === 'connecting' ? (
           <button onClick={stop} className="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs rounded-md transition-colors">
             Stop
           </button>
@@ -381,7 +381,7 @@ function HumanVsAIGame({
 
       {/* Controls */}
       <div className="flex gap-2">
-        {status === 'playing' ? (
+        {status === 'playing' || status === 'connecting' ? (
           <button onClick={stop} className="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs rounded-md transition-colors">
             Stop
           </button>

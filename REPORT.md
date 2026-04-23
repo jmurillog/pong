@@ -17,7 +17,7 @@ Reinforcement learning (RL) has produced landmark results in artificial intellig
 
 **Research gap.** Most RL benchmarking studies compare algorithms against each other or against human scores that were collected under non-standardized conditions (Mnih et al., 2015 used professional game testers with unlimited practice). Critically, these comparisons rarely quantify uncertainty: they report point estimates without confidence intervals, making it impossible to assess whether a reported performance gap is reliable or a product of random seed selection. Henderson et al. (2018) demonstrated that different seeds, codebases, and hyperparameter choices can produce dramatically different results for the same algorithm on the same task — a finding that directly motivates our multi-seed design. Agarwal et al. (2021) further showed that the field has systematically underreported uncertainty and advocated for bootstrap confidence intervals as the appropriate evaluation protocol for deep RL.
 
-**Novelty.** We address this gap by: (1) collecting a fresh, in-house novice human baseline under the same evaluation conditions as the agent (same environment, opponent, and scoring system); (2) reporting bootstrap 95% confidence intervals for the agent mean, the human mean, and the agent−human difference simultaneously, enabling statistically principled comparison; and (3) framing the study around two concrete hypotheses with a pre-specified success criterion. The primary stakeholder is any small engineering team that must decide whether PPO is a sensible first choice for game agent development under time and compute constraints: our sample-efficiency curve and seed-stability estimates directly support that decision.
+**Novelty.** We address this gap by: (1) collecting a fresh, in-house novice human baseline under the same evaluation conditions as the agent (same environment, opponent, and scoring system); (2) reporting bootstrap 95% confidence intervals for the agent mean, the human mean, and the agent−human difference simultaneously, enabling statistically principled comparison; and (3) framing the study around two concrete hypotheses with a pre-specified success criterion. The primary stakeholder is any small engineering team that must decide whether PPO is a sensible first choice for game agent development under time and compute constraints: our sample-efficiency curve and seed-stability estimates directly support that decision. Beyond this specific experiment, the approach itself — measuring a human baseline under controlled conditions and reporting uncertainty at every level of the comparison — offers a replicable evaluation methodology that addresses long-standing validity concerns in RL benchmarking (Agarwal et al., 2021). The field has protocols for comparing algorithms to each other; it lacks a standard for comparing them to humans with appropriate uncertainty quantification. This study contributes one such protocol.
 
 **Hypotheses.** H1: PPO will reach or exceed the novice human baseline within 5M environment steps. H2: Performance will show meaningful variance across seeds, such that single-run reporting would meaningfully misrepresent algorithm reliability (Henderson et al., 2018). Both hypotheses were tested prospectively and their confirmation assessed against bootstrap CIs.
 
@@ -25,19 +25,11 @@ Reinforcement learning (RL) has produced landmark results in artificial intellig
 
 ## Results
 
-### Learning dynamics
-
-Figure 1 presents learning curves (mean ± 1 SE across five seeds) for both training budgets alongside the human baseline. Both trajectories share a cold-start phase: mean return is −21.0 for the first 200,000–400,000 timesteps, indicating the agent has not yet discovered it can score any points. Around step 500,000, performance rises sharply. At 800,000 timesteps — approximately 80% into the shorter budget — the mean first exceeds the human baseline mean of −15.73, directly answering **RQ1**: PPO surpasses novice human performance at roughly **800k training steps**, well within a 1M-step budget.
-
-The 5M trajectory continues improving after the 1M run terminates. The agent crosses zero return (winning more points than it concedes) at approximately 1.4M steps, reaches a 100% win rate by 3.6M steps, and stabilizes at +15.61 return at 5M steps. The characteristic two-phase learning structure — rapid acquisition of game mechanics (500k–1.5M) followed by gradual refinement (1.5M–5M) — is consistent across all five seeds.
-
-**[Figure 1: Learning curves — learning_curves.png]**
-
 ### Final performance and human comparison
 
-Table 1 summarizes final performance for both budgets against the human baseline.
+Table 1 summarizes final agent performance for both budgets alongside the measured human baseline, with bootstrap 95% confidence intervals.
 
-**Table 1. Final performance: PPO agent vs. novice human baseline**
+**Table 1. Final performance: PPO agent vs. novice human baseline (bootstrap 95% CIs, 10,000 resamples)**
 
 | Condition | n | Mean Return | SE | 95% CI | Win Rate |
 |---|---|---|---|---|---|
@@ -45,13 +37,19 @@ Table 1 summarizes final performance for both budgets against the human baseline
 | PPO — 1M steps | 5 seeds | −8.46 | 1.18 | [−10.78, −6.58] | 10% |
 | PPO — 5M steps | 5 seeds | +15.61 | 0.66 | [+14.33, +16.62] | 100% |
 
-**H1 confirmed.** The 95% bootstrap CI for the agent−human difference at 1M steps is [+4.98, +9.27], entirely excluding zero. At 5M steps, the difference is +31.34 (CI: [+29.94, +32.57]). PPO significantly exceeds the novice human baseline at both budgets; at 5M steps, the agent achieves near-perfect mastery. **H2 confirmed.** At 1M steps, per-seed final returns span [−12.35, −6.20] with σ = 2.64, confirming that single-seed reporting would be misleading: a cherry-picked best run (−6.2) appears 50% better than the worst (−12.35). At 5M steps, variance shrinks substantially (σ = 1.47, range [+13.25, +17.00]), but differences between seeds remain non-trivial for decision-making under compute constraints.
+**H1 confirmed.** PPO exceeds the novice human baseline at both budget levels. The 95% bootstrap CI for the agent−human difference at 1M steps is [+4.98, +9.27], entirely excluding zero. At 5M steps, the difference grows to +31.34 (CI: [+29.94, +32.57]), with all five seeds achieving 100% win rate. **H2 confirmed.** At 1M steps, per-seed final returns span [−12.35, −6.20] with σ = 2.64: a cherry-picked best run appears 50% better than the worst, confirming that single-seed reporting is meaningfully misleading. At 5M steps, variance shrinks (σ = 1.47, range [+13.25, +17.00]), but seed-level differences remain non-trivial for compute-constrained decisions.
 
-### Seed-level variance
+Figure 2 shows per-seed final returns for both budgets. All five 5M seeds individually exceed the entire human distribution. All five 1M seeds individually exceed the human mean.
 
-Figure 2 shows per-seed final returns for both budgets against the human baseline. All five 5M seeds individually exceed the entire human distribution. All five 1M seeds exceed the human mean.
+**[Figure 2: Seed variance bar chart — insert seed_variance.png]**
 
-**[Figure 2: Seed variance bar chart — seed_variance.png]**
+### Learning dynamics
+
+Figure 1 shows learning curves (mean ± 1 SE across five seeds) for both budgets, alongside the human baseline, revealing how the agent arrives at the headline numbers above. Both budget trajectories share a cold-start phase: mean return is −21.0 for the first 200,000–400,000 timesteps, indicating the agent has not yet discovered it can score any points. Around step 500,000, performance rises sharply. At 800,000 timesteps — approximately 80% into the shorter budget — the cross-seed mean first exceeds the human baseline mean of −15.73, directly answering **RQ1**: PPO surpasses novice human performance at roughly **800k training steps**, well within a 1M-step budget.
+
+The 5M trajectory continues improving after the 1M run terminates. The agent crosses zero return at approximately 1.4M steps, reaches a 100% win rate by 3.6M steps, and stabilizes at +15.61 return at 5M steps. This characteristic two-phase structure — rapid acquisition of game mechanics (500k–1.5M) followed by gradual refinement — is consistent across all five seeds.
+
+**[Figure 1: Learning curves — insert learning_curves.png]**
 
 ---
 
@@ -73,7 +71,9 @@ While this study is technically benign, it touches on broader considerations rel
 
 ### Limitations
 
-Several limitations qualify these conclusions. First, the human participants are novice players (no prior Pong experience); a baseline including experienced players would set a higher bar and may yield different crossover timings. Second, Pong is widely regarded as one of the easier Atari games for deep RL; the same budget on games such as Montezuma's Revenge or Pitfall would yield very different results. Third, the agent is trained against a fixed, deterministic ROM opponent: its policy may not generalize to novel or adaptive opponents. Fourth, wall-clock training time was not systematically recorded across all seeds, limiting reproducibility for time-constrained practitioners.
+The most significant limitation is a methodological validity threat in the human-agent comparison itself. The PPO agent observes 84×84 grayscale pixel frames directly from the ALE ROM environment, while human participants played via a web-based browser game built to mirror the same opponent and scoring rules. These are not identical perceptual environments: the human sees a rendered, colour interface at variable frame rates and uses keyboard inputs, while the agent processes a canonical pixel stack with precise temporal alignment. This confound means the comparison is not fully controlled — superior agent performance could partly reflect differences in interface familiarity or sensorimotor latency, not only policy quality. Partially mitigating this concern is that human Pong performance is predominantly limited by opponent difficulty and game understanding, not reaction-time precision at typical game speeds; nevertheless, this confound should be considered when generalising the results.
+
+Second, the human participants are novice players (no prior Pong experience); a baseline including experienced players would set a higher bar and likely delay the crossover point. Third, Pong is one of the easier Atari games for deep RL — the same budget on games such as Montezuma's Revenge or Pitfall would yield dramatically different results, and the crossover timing should not be assumed to generalise across games. Fourth, the agent is trained against a fixed, deterministic ROM opponent; its policy may not transfer to adaptive or human opponents. Fifth, wall-clock training time was not systematically recorded across all seeds, limiting reproducibility for time-constrained practitioners.
 
 ### Future directions
 

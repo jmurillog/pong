@@ -123,8 +123,16 @@ export default function AIStreamViewer({
     };
   }, [checkpoint, fps, maxEpisodes, stop]);
 
+  // When the checkpoint changes, stop any active stream and reset to idle.
+  // Don't auto-connect — the user must click Start to avoid stacking server
+  // game loops when browsing checkpoints while one is already running.
+  const prevCheckpointId = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (checkpoint) connect();
+    if (prevCheckpointId.current !== checkpoint?.id) {
+      prevCheckpointId.current = checkpoint?.id;
+      if (wsRef.current) stop();
+      else setStatus('idle');
+    }
     return () => stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [checkpoint?.id]);
@@ -262,9 +270,9 @@ export default function AIStreamViewer({
       )}
 
       {/* Controls */}
-      {checkpoint && status !== 'idle' && (
+      {checkpoint && (
         <div className="flex gap-2">
-          {status === 'playing' ? (
+          {status === 'playing' || status === 'connecting' ? (
             <button
               onClick={stop}
               className="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-white text-xs rounded-md transition-colors"
